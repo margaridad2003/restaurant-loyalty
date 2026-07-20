@@ -1,0 +1,5 @@
+[[redirects]]
+  from = "/api/*"
+  to = "https://restaurant-loyalty-z37f.onrender.com"          
+  status = 200
+  force = true
