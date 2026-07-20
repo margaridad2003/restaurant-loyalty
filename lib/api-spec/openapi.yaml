@@ -1,0 +1,728 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification for Ficheiro de Clientes - Restaurant Loyalty System
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: customers
+    description: Customer management
+  - name: visits
+    description: Visit and check-in management
+  - name: rewards
+    description: Reward redemptions
+  - name: dashboard
+    description: Dashboard statistics
+  - name: auth
+    description: Customer authentication via phone
+  - name: portal
+    description: Customer-facing portal (mobile)
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /customers:
+    get:
+      operationId: listCustomers
+      tags: [customers]
+      summary: List all customers
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of customers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Customer"
+    post:
+      operationId: createCustomer
+      tags: [customers]
+      summary: Register a new customer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CustomerInput"
+      responses:
+        "201":
+          description: Customer created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Customer"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Phone number already registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /customers/{id}:
+    get:
+      operationId: getCustomer
+      tags: [customers]
+      summary: Get customer by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Customer details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Customer"
+        "404":
+          description: Customer not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateCustomer
+      tags: [customers]
+      summary: Update customer details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CustomerUpdate"
+      responses:
+        "200":
+          description: Customer updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Customer"
+        "404":
+          description: Customer not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /customers/phone/{phone}:
+    get:
+      operationId: getCustomerByPhone
+      tags: [customers]
+      summary: Look up customer by phone number
+      parameters:
+        - name: phone
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Customer found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Customer"
+        "404":
+          description: Customer not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /customers/{id}/visits:
+    get:
+      operationId: getCustomerVisits
+      tags: [visits]
+      summary: Get visit history for a customer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Visit history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Visit"
+
+  /visits:
+    post:
+      operationId: registerVisit
+      tags: [visits]
+      summary: Register a customer visit and award points
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VisitInput"
+      responses:
+        "201":
+          description: Visit registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VisitResult"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Customer not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /rewards/redemptions:
+    post:
+      operationId: redeemReward
+      tags: [rewards]
+      summary: Redeem a reward for a customer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RedemptionInput"
+      responses:
+        "201":
+          description: Reward redeemed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Redemption"
+        "400":
+          description: Reward not available
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /customers/{id}/redemptions:
+    get:
+      operationId: getCustomerRedemptions
+      tags: [rewards]
+      summary: Get redemption history for a customer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Redemption history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Redemption"
+
+  /dashboard/stats:
+    get:
+      operationId: getDashboardStats
+      tags: [dashboard]
+      summary: Get overall dashboard statistics
+      responses:
+        "200":
+          description: Dashboard statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardStats"
+
+  /dashboard/recent-activity:
+    get:
+      operationId: getRecentActivity
+      tags: [dashboard]
+      summary: Get recent visits and redemptions
+      responses:
+        "200":
+          description: Recent activity
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActivityItem"
+
+  /dashboard/birthdays-today:
+    get:
+      operationId: getBirthdaysToday
+      tags: [dashboard]
+      summary: Get active customers whose birthday is today
+      responses:
+        "200":
+          description: Customers with birthday today
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Customer"
+
+  /auth/customer:
+    post:
+      operationId: authCustomer
+      tags: [auth]
+      summary: Login or register a customer via phone number
+      description: If phone exists, returns a session token. If not found, returns isNew=true so the client can prompt registration.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CustomerAuthInput"
+      responses:
+        "200":
+          description: Existing customer authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomerAuthResult"
+        "404":
+          description: Phone not registered — client should prompt registration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/register:
+    post:
+      operationId: authRegister
+      tags: [auth]
+      summary: Register a new customer and return a session token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CustomerRegisterInput"
+      responses:
+        "201":
+          description: Customer created and session started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomerAuthResult"
+        "409":
+          description: Phone already registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /portal/me:
+    get:
+      operationId: getPortalMe
+      tags: [portal]
+      summary: Get the authenticated customer's profile
+      description: Requires Authorization Bearer token
+      responses:
+        "200":
+          description: Customer profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Customer"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /portal/checkin:
+    post:
+      operationId: portalCheckin
+      tags: [portal]
+      summary: Self check-in from table QR code
+      description: Authenticated customer registers their own visit. One check-in per day allowed.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PortalCheckinInput"
+      responses:
+        "201":
+          description: Visit registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VisitResult"
+        "400":
+          description: Already checked in today or invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /portal/visits:
+    get:
+      operationId: getPortalVisits
+      tags: [portal]
+      summary: Get the authenticated customer's visit history
+      responses:
+        "200":
+          description: Visit history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Visit"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    Customer:
+      type: object
+      required:
+        - id
+        - fullName
+        - phone
+        - totalMeals
+        - freeMealProgress
+        - freeMealsAvailable
+        - isActive
+        - createdAt
+      properties:
+        id:
+          type: integer
+        fullName:
+          type: string
+        phone:
+          type: string
+        email:
+          type: ["string", "null"]
+        birthMonth:
+          type: ["integer", "null"]
+        birthDay:
+          type: ["integer", "null"]
+        qrCodeToken:
+          type: string
+        totalMeals:
+          type: integer
+        freeMealProgress:
+          type: integer
+          description: "Refeições desde a última refeição grátis (0-4)"
+        freeMealsAvailable:
+          type: integer
+          description: "Refeições grátis ganhas ainda não utilizadas"
+        lastVisitAt:
+          type: ["string", "null"]
+        consentMarketing:
+          type: boolean
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+
+    CustomerInput:
+      type: object
+      required:
+        - fullName
+        - phone
+      properties:
+        fullName:
+          type: string
+          minLength: 2
+        phone:
+          type: string
+          minLength: 9
+        email:
+          type: string
+        birthMonth:
+          type: integer
+          minimum: 1
+          maximum: 12
+        birthDay:
+          type: integer
+          minimum: 1
+          maximum: 31
+        consentMarketing:
+          type: boolean
+
+    CustomerUpdate:
+      type: object
+      properties:
+        fullName:
+          type: string
+        email:
+          type: string
+        birthMonth:
+          type: integer
+        birthDay:
+          type: integer
+        consentMarketing:
+          type: boolean
+        isActive:
+          type: boolean
+
+    CustomerAuthInput:
+      type: object
+      required:
+        - phone
+      properties:
+        phone:
+          type: string
+          minLength: 9
+
+    CustomerRegisterInput:
+      type: object
+      required:
+        - fullName
+        - phone
+      properties:
+        fullName:
+          type: string
+          minLength: 2
+        phone:
+          type: string
+          minLength: 9
+        email:
+          type: string
+        birthMonth:
+          type: integer
+          minimum: 1
+          maximum: 12
+        birthDay:
+          type: integer
+          minimum: 1
+          maximum: 31
+        consentMarketing:
+          type: boolean
+
+    CustomerAuthResult:
+      type: object
+      required:
+        - token
+        - customer
+      properties:
+        token:
+          type: string
+        customer:
+          $ref: "#/components/schemas/Customer"
+
+    PortalCheckinInput:
+      type: object
+      properties:
+        tableNumber:
+          type: ["integer", "null"]
+        notes:
+          type: ["string", "null"]
+
+    Visit:
+      type: object
+      required:
+        - id
+        - customerId
+        - visitDate
+        - mealsCount
+        - pointsEarned
+        - pointsRedeemed
+      properties:
+        id:
+          type: integer
+        customerId:
+          type: integer
+        visitDate:
+          type: string
+        mealsCount:
+          type: integer
+        pointsEarned:
+          type: integer
+        pointsRedeemed:
+          type: integer
+        notes:
+          type: ["string", "null"]
+        rewardUsed:
+          type: ["string", "null"]
+
+    VisitInput:
+      type: object
+      required:
+        - customerId
+        - mealsCount
+      properties:
+        customerId:
+          type: integer
+        mealsCount:
+          type: integer
+          minimum: 1
+        notes:
+          type: string
+
+    VisitResult:
+      type: object
+      required:
+        - visit
+        - customer
+        - freeMealEarned
+      properties:
+        visit:
+          $ref: "#/components/schemas/Visit"
+        customer:
+          $ref: "#/components/schemas/Customer"
+        freeMealEarned:
+          type: boolean
+
+    Redemption:
+      type: object
+      required:
+        - id
+        - customerId
+        - rewardType
+        - redeemedAt
+      properties:
+        id:
+          type: integer
+        customerId:
+          type: integer
+        rewardType:
+          type: string
+        redeemedAt:
+          type: string
+        visitId:
+          type: ["integer", "null"]
+        customerName:
+          type: ["string", "null"]
+
+    RedemptionInput:
+      type: object
+      required:
+        - customerId
+        - rewardType
+      properties:
+        customerId:
+          type: integer
+        rewardType:
+          type: string
+        visitId:
+          type: integer
+
+    DashboardStats:
+      type: object
+      required:
+        - totalCustomers
+        - activeCustomers
+        - visitsToday
+        - visitsThisMonth
+        - totalVisitsAllTime
+        - totalRedemptions
+      properties:
+        totalCustomers:
+          type: integer
+        activeCustomers:
+          type: integer
+        visitsToday:
+          type: integer
+        visitsThisMonth:
+          type: integer
+        totalVisitsAllTime:
+          type: integer
+        totalRedemptions:
+          type: integer
+
+    ActivityItem:
+      type: object
+      required:
+        - type
+        - customerName
+        - description
+        - timestamp
+      properties:
+        type:
+          type: string
+          enum: [visit, redemption, new_customer]
+        customerName:
+          type: string
+        description:
+          type: string
+        timestamp:
+          type: string
+        tier:
+          type: ["string", "null"]
+
+    TierCount:
+      type: object
+      required:
+        - tier
+        - count
+      properties:
+        tier:
+          type: string
+        count:
+          type: integer
