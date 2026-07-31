@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useGetCustomer, useGetCustomerVisits, useGetCustomerRedemptions, useRedeemReward, useUpdateCustomer, getGetCustomerQueryKey, getGetCustomerVisitsQueryKey, getGetCustomerRedemptionsQueryKey } from "@workspace/api-client-react";
-import { useParams } from "wouter";
+import { useParams, useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Loader2, Gift, History, Star, Phone, Mail, Calendar, Edit, Tag, Cake, Sunrise, Moon } from "lucide-react";
+import { Loader2, Gift, History, Star, Phone, Mail, Calendar, Edit, Tag, Cake, Sunrise, Moon, Trash2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -51,6 +51,22 @@ export default function CustomerProfile() {
   const [isRedeemOpen, setIsRedeemOpen] = useState(false);
   const [isBirthdayRedeemOpen, setIsBirthdayRedeemOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [, navigate] = useLocation();
+
+const handleDelete = async () => {
+  setIsDeleting(true);
+  try {
+    const res = await fetch(`/api/customers/${customerId}`, { method: "DELETE" });
+    if (!res.ok) throw new Error("Failed to delete");
+    toast({ title: "Cliente Eliminado", description: "O perfil foi eliminado com sucesso." });
+    navigate("/customers");
+  } catch (error) {
+    toast({ title: "Erro ao Eliminar", description: "Não foi possível eliminar o cliente.", variant: "destructive" });
+    setIsDeleting(false);
+  }
+};
 
   const [editName, setEditName] = useState("");
   const [editEmail, setEditEmail] = useState("");
@@ -252,6 +268,30 @@ export default function CustomerProfile() {
                   </div>
                 </DialogContent>
               </Dialog>
+
+              <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+  <DialogTrigger asChild>
+    <Button variant="outline" className="shadow-sm border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive">
+      <Trash2 className="mr-2 h-4 w-4" />
+      Eliminar
+    </Button>
+  </DialogTrigger>
+  <DialogContent>
+    <DialogHeader>
+      <DialogTitle className="font-serif">Eliminar Perfil</DialogTitle>
+      <DialogDescription>
+        Tem a certeza que quer eliminar permanentemente o perfil de <strong>{customer.fullName}</strong>? Todo o histórico de visitas e recompensas será também eliminado. Esta ação não pode ser revertida.
+      </DialogDescription>
+    </DialogHeader>
+    <div className="flex justify-end gap-2 pt-4">
+      <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>Cancelar</Button>
+      <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
+        {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+        Eliminar Definitivamente
+      </Button>
+    </div>
+  </DialogContent>
+</Dialog>
 
               <Dialog open={isRedeemOpen} onOpenChange={setIsRedeemOpen}>
                 <DialogTrigger asChild>
