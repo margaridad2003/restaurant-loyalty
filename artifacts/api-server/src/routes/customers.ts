@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, ilike, or } from "drizzle-orm";
-import { db, customersTable } from "@workspace/db";
+import { db, customersTable, visitsTable, redemptionsTable } from "@workspace/db";
 import {
   CreateCustomerBody,
   GetCustomerParams,
@@ -144,6 +144,35 @@ router.patch("/customers/:id", async (req, res): Promise<void> => {
   }
 
   res.json(enrichCustomer(customer));
+});
+
+router.delete("/customers/:id", async (req, res): Promise<void> => {
+  const params = GetCustomerParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  const { id } = params.data;
+
+  const [customer] = await db
+    .select({ id: customersTable.id })
+    .from(customersTable)
+    .where(eq(customersTable.id, id))
+    .limit(1);
+
+  if (!customer) {
+    res.status(404).json({ error: "Cliente não encontrado" });
+    return;
+  }
+
+  await db.transaction(async (tx) => {
+    await tx.delete(redemptionsTable).where(eq(redemptionsTable.customerId, id));
+    await tx.delete(visitsTable).where(eq(visitsTable.customerId, id));
+    await tx.delete(customersTable).where(eq(customersTable.id, id));
+  });
+
+  res.status(204).send();
 });
 
 export default router;
