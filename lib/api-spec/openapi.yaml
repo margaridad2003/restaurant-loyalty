@@ -138,6 +138,26 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+             
+    delete:
+      operationId: deleteCustomer
+      tags: [customers]
+      summary: Delete a customer and all their data
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Customer deleted
+        "404":
+          description: Customer not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /customers/phone/{phone}:
     get:
